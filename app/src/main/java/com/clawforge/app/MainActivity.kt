@@ -1,12 +1,13 @@
 package com.clawforge.app
 
-import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import com.clawforge.app.core.AgentService
 import com.clawforge.app.core.Store
 import com.clawforge.app.ui.ClawForgeTheme
@@ -15,13 +16,9 @@ import com.clawforge.app.ui.allRuntimePermissions
 
 class MainActivity : ComponentActivity() {
 
-    private var onPermResult: ((Map<String, Boolean>) -> Unit)? = null
-
     private val permLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
-        onPermResult?.invoke(result)
-    }
+    ) { /* OS handles the dialog results */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,16 +34,13 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun AppRoot() {
         val ctx = LocalContext.current
-        val prefs = remember { ctx.getSharedPreferences("clawforge", Context.MODE_PRIVATE) }
-        var permsDone by remember { mutableStateOf(prefs.getBoolean("perms_done", false)) }
 
-        if (!permsDone) {
-            LaunchedEffect(Unit) {
-                onPermResult = {
-                    prefs.edit().putBoolean("perms_done", true).apply()
-                    permsDone = true
-                }
-                permLauncher.launch(allRuntimePermissions())
+        LaunchedEffect(Unit) {
+            val missing = allRuntimePermissions().filter { perm ->
+                ContextCompat.checkSelfPermission(ctx, perm) != PackageManager.PERMISSION_GRANTED
+            }.toTypedArray()
+            if (missing.isNotEmpty()) {
+                permLauncher.launch(missing)
             }
         }
 
