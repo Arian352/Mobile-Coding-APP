@@ -36,15 +36,21 @@ private data class PermEntry(
 private val ALL_PERMS = listOf(
     PermEntry("📷", "Kamera", Manifest.permission.CAMERA),
     PermEntry("🎤", "Mikrofon", Manifest.permission.RECORD_AUDIO),
-    PermEntry("📍", "Standort", Manifest.permission.ACCESS_FINE_LOCATION),
-    PermEntry("📞", "Anrufe", Manifest.permission.CALL_PHONE),
+    PermEntry("📍", "Standort (genau)", Manifest.permission.ACCESS_FINE_LOCATION),
+    PermEntry("🗺️", "Standort (grob)", Manifest.permission.ACCESS_COARSE_LOCATION),
+    PermEntry("🌍", "Hintergrund-GPS", Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+    PermEntry("📞", "Anrufe tätigen", Manifest.permission.CALL_PHONE),
+    PermEntry("📲", "Anruf annehmen", Manifest.permission.ANSWER_PHONE_CALLS, minSdk = 26),
+    PermEntry("📤", "Ausgehende Anrufe", Manifest.permission.PROCESS_OUTGOING_CALLS, maxSdk = 29),
     PermEntry("💬", "SMS senden", Manifest.permission.SEND_SMS),
     PermEntry("📩", "SMS lesen", Manifest.permission.READ_SMS),
     PermEntry("📥", "SMS empfangen", Manifest.permission.RECEIVE_SMS),
     PermEntry("👥", "Kontakte lesen", Manifest.permission.READ_CONTACTS),
     PermEntry("✏️", "Kontakte schreiben", Manifest.permission.WRITE_CONTACTS),
     PermEntry("📋", "Anruf-Verlauf", Manifest.permission.READ_CALL_LOG),
+    PermEntry("🗒️", "Anruf-Log schreiben", Manifest.permission.WRITE_CALL_LOG),
     PermEntry("📱", "Telefon-Status", Manifest.permission.READ_PHONE_STATE),
+    PermEntry("🔢", "Telefon-Nummer", Manifest.permission.READ_PHONE_NUMBERS, minSdk = 26),
     PermEntry("🔔", "Benachrichtigungen", Manifest.permission.POST_NOTIFICATIONS, minSdk = 33),
     PermEntry("🖼️", "Bilder", Manifest.permission.READ_MEDIA_IMAGES, minSdk = 33),
     PermEntry("🎬", "Videos", Manifest.permission.READ_MEDIA_VIDEO, minSdk = 33),
@@ -55,7 +61,6 @@ private val ALL_PERMS = listOf(
     PermEntry("🔍", "BT-Scan", Manifest.permission.BLUETOOTH_SCAN, minSdk = 31),
     PermEntry("❤️", "Körper-Sensor", Manifest.permission.BODY_SENSORS),
     PermEntry("🏃", "Aktivitäten", Manifest.permission.ACTIVITY_RECOGNITION, minSdk = 29),
-    PermEntry("🌍", "Hintergrund-GPS", Manifest.permission.ACCESS_BACKGROUND_LOCATION),
 )
 
 fun allRuntimePermissions(): Array<String> {

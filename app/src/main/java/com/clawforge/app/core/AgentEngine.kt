@@ -6,57 +6,72 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.NetworkInterface
 
 object AgentEngine {
     private const val MAX_STEPS = 10
-    private val toolRegex = Regex("```tool\\s*\\n([\\s\\S]*?)```")
+
+    // Matches a bare JSON object that contains a "tool" key, anywhere in the response
+    private val toolRegex = Regex("""(?s)\{"tool"\s*:\s*"[^"]+".+?\}""")
+
+    fun loadRules(): String {
+        val dir = File("/sdcard/ClawForge/rules/")
+        if (!dir.exists()) return RulesManager.combined()
+        val external = dir.listFiles()
+            ?.filter { it.name.endsWith(".txt") || it.name.endsWith(".md") }
+            ?.sortedBy { it.name }
+            ?.joinToString("\n---\n") { it.readText() }
+            ?: ""
+        val internal = RulesManager.combined()
+        return listOf(external, internal).filter { it.isNotBlank() }.joinToString("\n---\n")
+    }
 
     fun systemPrompt(): String = buildString {
-        appendLine("Du bist ClawForge, ein autonomer KI-Agent direkt auf einem Android-Handy.")
-        appendLine("Du hast echten Zugriff auf Telefon-Funktionen und kannst sie wirklich ausführen.")
-        appendLine("Benutze die Werkzeuge aktiv und ohne Entschuldigung – sie funktionieren wirklich.")
+        appendLine("You are ClawForge, an AI assistant powered by Claude (Anthropic) that can control everything on this Android device.")
+        appendLine("You have real access to phone functions and can execute them truly.")
+        appendLine("Use the tools actively and without apology - they work for real.")
         appendLine()
-        appendLine("## Regeln des Nutzers")
-        appendLine(RulesManager.combined())
+        appendLine("## User Rules")
+        appendLine(loadRules())
         appendLine()
-        appendLine("## Werkzeuge – Format (exakt so, kein Fließtext drumherum):")
-        appendLine("```tool")
-        appendLine("{\"name\": \"set_alarm\", \"args\": {\"hour\": 8, \"minute\": 30, \"label\": \"Aufstehen\"}}")
-        appendLine("```")
-        appendLine("Nach jedem Werkzeugaufruf bekommst du TOOL_RESULT und kannst weitermachen.")
+        appendLine("## TOOL USAGE")
+        appendLine("When you want to use a tool, reply ONLY with this exact JSON format (nothing else around it):")
+        appendLine("""{"tool": "toolName", "args": {"key": "value"}}""")
+        appendLine("After each tool call you will receive TOOL_RESULT and can continue.")
         appendLine()
-        appendLine("### TELEFON-WERKZEUGE (funktionieren wirklich auf dem Gerät)")
-        appendLine("- set_alarm        {\"hour\":8,\"minute\":30,\"label\":\"…\"} – Wecker stellen")
-        appendLine("- set_timer        {\"seconds\":300,\"label\":\"…\"} – Timer starten")
-        appendLine("- open_url         {\"url\":\"https://…\"} – URL im Browser öffnen")
-        appendLine("- dial_number      {\"number\":\"+491234567890\"} – Anruf-App öffnen")
-        appendLine("- open_sms         {\"number\":\"+49…\",\"text\":\"…\"} – SMS-App öffnen")
-        appendLine("- get_battery      {} – Akkustand abfragen")
-        appendLine("- get_device_info  {} – Geräteinfo")
-        appendLine("- vibrate          {\"ms\":500} – Handy vibrieren lassen")
-        appendLine("- toggle_flashlight {} – Taschenlampe an/aus")
-        appendLine("- set_volume       {\"type\":\"musik\",\"level\":50} – Lautstärke 0-100")
-        appendLine("- open_app         {\"package\":\"com.whatsapp\"} – App öffnen")
-        appendLine("- share_text       {\"text\":\"…\"} – Teilen-Dialog öffnen")
+        appendLine("### PHONE TOOLS (work for real on the device)")
+        appendLine("""- setAlarm      {"tool":"setAlarm","args":{"hour":8,"minute":30,"label":"Wake up"}}""")
+        appendLine("""- setTimer      {"tool":"setTimer","args":{"seconds":300,"label":"Timer"}}""")
+        appendLine("""- openUrl       {"tool":"openUrl","args":{"url":"https://..."}}""")
+        appendLine("""- dialNumber    {"tool":"dialNumber","args":{"number":"+491234567890"}}""")
+        appendLine("""- openSms       {"tool":"openSms","args":{"number":"+49...","text":"..."}}""")
+        appendLine("""- getBattery    {"tool":"getBattery","args":{}}""")
+        appendLine("""- getDeviceInfo {"tool":"getDeviceInfo","args":{}}""")
+        appendLine("""- vibrate       {"tool":"vibrate","args":{"ms":500}}""")
+        appendLine("""- toggleFlashlight {"tool":"toggleFlashlight","args":{}}""")
+        appendLine("""- setVolume     {"tool":"setVolume","args":{"type":"music","level":50}}""")
+        appendLine("""- openApp       {"tool":"openApp","args":{"packageName":"com.whatsapp"}}""")
+        appendLine("""- shareText     {"tool":"shareText","args":{"text":"..."}}""")
+        appendLine("""- updateApk     {"tool":"updateApk","args":{"downloadUrl":"https://github.com/.../releases/download/.../app.apk"}}""")
         appendLine()
-        appendLine("### DATEI- & PROJEKT-WERKZEUGE")
-        appendLine("- create_project   {\"name\":\"…\"} – neues Projekt anlegen")
-        appendLine("- list_projects    {} – Projekte auflisten")
-        appendLine("- list_files       {\"project\":\"…\"} – Dateien eines Projekts")
-        appendLine("- read_file        {\"project\":\"…\",\"path\":\"…\"} – Datei lesen")
-        appendLine("- write_file       {\"project\":\"…\",\"path\":\"…\",\"content\":\"…\"} – Datei schreiben")
-        appendLine("- delete_file      {\"project\":\"…\",\"path\":\"…\"} – Datei löschen")
+        appendLine("### FILE & PROJECT TOOLS")
+        appendLine("""- createProject {"tool":"createProject","args":{"name":"..."}}""")
+        appendLine("""- listProjects  {"tool":"listProjects","args":{}}""")
+        appendLine("""- listFiles     {"tool":"listFiles","args":{"project":"..."}}""")
+        appendLine("""- readFile      {"tool":"readFile","args":{"project":"...","path":"..."}}""")
+        appendLine("""- writeFile     {"tool":"writeFile","args":{"project":"...","path":"...","content":"..."}}""")
+        appendLine("""- deleteFile    {"tool":"deleteFile","args":{"project":"...","path":"..."}}""")
         appendLine()
-        appendLine("### INTERNET & NETZWERK")
-        appendLine("- http_get         {\"url\":\"…\"} – Webseite/API abrufen (Internet muss aktiv sein)")
-        appendLine("- scan_network     {} – WLAN-Geräte scannen (Netzwerk-Zugriff muss aktiv sein)")
+        appendLine("### INTERNET & NETWORK")
+        appendLine("""- httpGet       {"tool":"httpGet","args":{"url":"..."}}""")
+        appendLine("""- scanNetwork   {"tool":"scanNetwork","args":{}}""")
         appendLine()
         appendLine("### MESSAGING & BUILD")
-        appendLine("- send_whatsapp    {\"text\":\"…\"} – WhatsApp Cloud API (wenn konfiguriert)")
-        appendLine("- trigger_apk_build {} – APK via GitHub Actions bauen")
+        appendLine("""- sendWhatsapp  {"tool":"sendWhatsapp","args":{"text":"..."}}""")
+        appendLine("""- triggerApkBuild {"tool":"triggerApkBuild","args":{}}""")
     }
 
     suspend fun run(history: List<ChatMsg>): String {
@@ -65,22 +80,54 @@ object AgentEngine {
         repeat(MAX_STEPS) {
             val reply = AiClient.chat(msgs)
             val match = toolRegex.find(reply) ?: return reply
-            val result = try {
-                executeTool(JSONObject(match.groupValues[1].trim()))
+            val toolJson = try {
+                JSONObject(match.value)
             } catch (e: Exception) {
-                "Werkzeug-Fehler: ${e.message}"
+                return reply
+            }
+            val result = try {
+                executeTool(toolJson)
+            } catch (e: Exception) {
+                "Tool error: ${e.message}"
             }
             msgs.add(ChatMsg("assistant", reply))
             msgs.add(ChatMsg("user", "TOOL_RESULT:\n${result.take(8000)}"))
         }
-        return "Maximale Schritte erreicht."
+        return "Maximum steps reached."
     }
 
     private suspend fun executeTool(call: JSONObject): String {
-        val name = call.getString("name")
+        val name = call.getString("tool")
         val a = call.optJSONObject("args") ?: JSONObject()
         return when (name) {
-            // Telefon
+            // Phone tools
+            "setAlarm" -> PhoneTools.setAlarm(a.getInt("hour"), a.getInt("minute"), a.optString("label", "ClawForge"))
+            "setTimer" -> PhoneTools.setTimer(a.getInt("seconds"), a.optString("label", "Timer"))
+            "openUrl" -> PhoneTools.openUrl(a.getString("url"))
+            "dialNumber" -> PhoneTools.dialNumber(a.getString("number"))
+            "openSms" -> PhoneTools.openSms(a.getString("number"), a.optString("text", ""))
+            "getBattery" -> PhoneTools.getBattery()
+            "getDeviceInfo" -> PhoneTools.getDeviceInfo()
+            "vibrate" -> PhoneTools.vibrate(a.optLong("ms", 500))
+            "toggleFlashlight" -> PhoneTools.toggleFlashlight()
+            "setVolume" -> PhoneTools.setVolume(a.getString("type"), a.getInt("level"))
+            "openApp" -> PhoneTools.openApp(a.getString("packageName"))
+            "shareText" -> PhoneTools.shareText(a.getString("text"))
+            "updateApk" -> PhoneTools.updateApk(a.getString("downloadUrl"))
+            // Projects
+            "createProject" -> ProjectsManager.create(a.getString("name"))
+            "listProjects" -> ProjectsManager.list().joinToString("\n") { it.name }.ifBlank { "No projects." }
+            "listFiles" -> ProjectsManager.listFiles(a.getString("project"))
+            "readFile" -> ProjectsManager.readFile(a.getString("project"), a.getString("path"))
+            "writeFile" -> ProjectsManager.writeFile(a.getString("project"), a.getString("path"), a.getString("content"))
+            "deleteFile" -> ProjectsManager.deleteFile(a.getString("project"), a.getString("path"))
+            // Internet
+            "httpGet" -> httpGet(a.getString("url"))
+            "scanNetwork" -> scanNetwork()
+            // Messaging
+            "sendWhatsapp" -> Messengers.sendWhatsApp(a.getString("text"))
+            "triggerApkBuild" -> triggerApkBuild()
+            // Legacy aliases (backward compat with old tool names)
             "set_alarm" -> PhoneTools.setAlarm(a.getInt("hour"), a.getInt("minute"), a.optString("label", "ClawForge"))
             "set_timer" -> PhoneTools.setTimer(a.getInt("seconds"), a.optString("label", "Timer"))
             "open_url" -> PhoneTools.openUrl(a.getString("url"))
@@ -88,47 +135,45 @@ object AgentEngine {
             "open_sms" -> PhoneTools.openSms(a.getString("number"), a.optString("text", ""))
             "get_battery" -> PhoneTools.getBattery()
             "get_device_info" -> PhoneTools.getDeviceInfo()
-            "vibrate" -> PhoneTools.vibrate(a.optLong("ms", 500))
             "toggle_flashlight" -> PhoneTools.toggleFlashlight()
             "set_volume" -> PhoneTools.setVolume(a.getString("type"), a.getInt("level"))
-            "open_app" -> PhoneTools.openApp(a.getString("package"))
+            "open_app" -> PhoneTools.openApp(a.optString("package", a.optString("packageName", "")))
             "share_text" -> PhoneTools.shareText(a.getString("text"))
-            // Projekte
             "create_project" -> ProjectsManager.create(a.getString("name"))
-            "list_projects" -> ProjectsManager.list().joinToString("\n") { it.name }.ifBlank { "Keine Projekte." }
+            "list_projects" -> ProjectsManager.list().joinToString("\n") { it.name }.ifBlank { "No projects." }
             "list_files" -> ProjectsManager.listFiles(a.getString("project"))
             "read_file" -> ProjectsManager.readFile(a.getString("project"), a.getString("path"))
             "write_file" -> ProjectsManager.writeFile(a.getString("project"), a.getString("path"), a.getString("content"))
             "delete_file" -> ProjectsManager.deleteFile(a.getString("project"), a.getString("path"))
-            // Internet
             "http_get" -> httpGet(a.getString("url"))
             "scan_network" -> scanNetwork()
-            // Messaging
             "send_whatsapp" -> Messengers.sendWhatsApp(a.getString("text"))
             "trigger_apk_build" -> triggerApkBuild()
-            else -> "Unbekanntes Werkzeug: $name"
+            else -> "Unknown tool: $name"
         }
     }
 
     private suspend fun httpGet(url: String): String = withContext(Dispatchers.IO) {
-        if (!Store.internetEnabled) "Internet-Zugriff ist deaktiviert (Einstellungen → Berechtigungen)."
-        else Net.get(url).take(8000)
+        if (!Store.internetEnabled) return@withContext "Internet access is disabled (Settings -> Permissions)."
+        Net.get(url).take(8000)
     }
 
     private suspend fun scanNetwork(): String {
-        if (!Store.networkAccessEnabled) return "Netzwerk-Scan ist deaktiviert (Einstellungen → Berechtigungen)."
-        val local = localIp() ?: return "Keine lokale WLAN-IP gefunden."
+        if (!Store.networkAccessEnabled) return "Network scan is disabled (Settings -> Permissions)."
+        val local = localIp() ?: return "No local WiFi IP found."
         val prefix = local.substringBeforeLast(".")
         val found = coroutineScope {
             (1..254).map { i ->
                 async(Dispatchers.IO) {
                     val ip = "$prefix.$i"
-                    try { if (InetAddress.getByName(ip).isReachable(300)) ip else null } catch (_: Exception) { null }
+                    try {
+                        if (InetAddress.getByName(ip).isReachable(300)) ip else null
+                    } catch (_: Exception) { null }
                 }
             }.awaitAll().filterNotNull()
         }
-        return if (found.isEmpty()) "Keine Geräte in $prefix.0/24 gefunden."
-        else "Eigene IP: $local\nGeräte:\n${found.joinToString("\n")}"
+        return if (found.isEmpty()) "No devices found in $prefix.0/24."
+        else "Own IP: $local\nDevices:\n${found.joinToString("\n")}"
     }
 
     private fun localIp(): String? =
@@ -140,12 +185,14 @@ object AgentEngine {
     private suspend fun triggerApkBuild(): String = withContext(Dispatchers.IO) {
         val token = Store.githubToken
         val repo = Store.githubRepo
-        if (token.isBlank() || repo.isBlank()) return@withContext "GitHub-Token oder Repository fehlt (Einstellungen → APK-Builds)."
+        if (token.isBlank() || repo.isBlank()) {
+            return@withContext "GitHub token or repository missing (Settings -> APK Builds)."
+        }
         Net.postJson(
             "https://api.github.com/repos/$repo/actions/workflows/build-apk.yml/dispatches",
             org.json.JSONObject().put("ref", "main").toString(),
             mapOf("Authorization" to "Bearer $token", "Accept" to "application/vnd.github+json")
         )
-        "APK-Build gestartet! Fortschritt: https://github.com/$repo/actions"
+        "APK build started! Progress: https://github.com/$repo/actions"
     }
 }
