@@ -21,7 +21,7 @@ object Store {
     private fun put(key: String, v: Boolean) = prefs.edit().putBoolean(key, v).apply()
 
     var provider: String
-        get() = str("provider", "Gemini")
+        get() = str("provider", "Anthropic")
         set(v) = put("provider", v)
 
     fun apiKey(provider: String) = str("apikey_$provider")

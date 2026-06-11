@@ -15,12 +15,12 @@ data class ChatMsg(val role: String, val content: String)
 
 /** Anbindung an die KI-Anbieter (Gemini, OpenAI, Anthropic, OpenRouter). */
 object AiClient {
-    val PROVIDERS = listOf("Gemini", "OpenAI", "Anthropic", "OpenRouter")
+    val PROVIDERS = listOf("Anthropic", "Gemini", "OpenAI", "OpenRouter")
 
     fun defaultModels(provider: String): List<String> = when (provider) {
         "Gemini" -> listOf("gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-2.5-flash-lite")
         "OpenAI" -> listOf("gpt-4o-mini", "gpt-4o", "gpt-4.1", "o3-mini")
-        "Anthropic" -> listOf("claude-haiku-4-5-20251001", "claude-opus-4-8", "claude-fable-5")
+        "Anthropic" -> listOf("claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5")
         "OpenRouter" -> listOf(
             "google/gemini-2.0-flash-001",
             "openai/gpt-4o-mini",
