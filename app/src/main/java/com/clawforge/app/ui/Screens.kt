@@ -1,10 +1,6 @@
 package com.clawforge.app.ui
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateFloatAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -253,10 +249,12 @@ private fun TypingDots() {
     }
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         repeat(3) { i ->
-            val size by animateDpAsState(if (i == active) 9.dp else 6.dp,
-                spring(Spring.DampingRatioMediumBouncy), label = "ds")
-            val alpha by animateFloatAsState(if (i == active) 1f else 0.22f, label = "da")
-            Box(Modifier.size(size).clip(CircleShape).background(BrandCyan.copy(alpha = alpha)))
+            Box(
+                Modifier
+                    .size(if (i == active) 9.dp else 6.dp)
+                    .clip(CircleShape)
+                    .background(BrandCyan.copy(alpha = if (i == active) 1f else 0.25f))
+            )
         }
     }
 }
@@ -327,9 +325,11 @@ fun ProjectsScreen() {
                     Spacer(Modifier.height(12.dp))
                     Text("Noch keine Projekte", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                     Spacer(Modifier.height(6.dp))
-                    Text("Sag der KI im Chat:\n„Erstelle eine Website" oder\n„Baue mir eine App"",
+                    Text(
+                        "Sag der KI im Chat:\nz.B. Erstelle eine Website\noder: Baue mir eine App",
                         color = TextSecondary, fontSize = 13.sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
             }
         } else {

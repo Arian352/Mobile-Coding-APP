@@ -86,13 +86,15 @@ object PhoneTools {
     } catch (e: Exception) { "❌ Fehler: ${e.message}" }
 
     private var torchOn = false
-    fun toggleFlashlight(): String = try {
-        val cm = ctx.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-        val id = cm.cameraIdList.firstOrNull() ?: return "❌ Keine Kamera gefunden."
-        torchOn = !torchOn
-        cm.setTorchMode(id, torchOn)
-        if (torchOn) "✅ Taschenlampe AN 🔦" else "✅ Taschenlampe AUS"
-    } catch (e: Exception) { "❌ Fehler: ${e.message}" }
+    fun toggleFlashlight(): String {
+        return try {
+            val cm = ctx.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+            val id = cm.cameraIdList.firstOrNull() ?: return "❌ Keine Kamera gefunden."
+            torchOn = !torchOn
+            cm.setTorchMode(id, torchOn)
+            if (torchOn) "✅ Taschenlampe AN 🔦" else "✅ Taschenlampe AUS"
+        } catch (e: Exception) { "❌ Fehler: ${e.message}" }
+    }
 
     fun setVolume(type: String, level: Int): String = try {
         val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -108,13 +110,15 @@ object PhoneTools {
         "✅ Lautstärke ($type) auf $level% gesetzt."
     } catch (e: Exception) { "❌ Fehler: ${e.message}" }
 
-    fun openApp(packageName: String): String = try {
-        val intent = ctx.packageManager.getLaunchIntentForPackage(packageName)
-            ?: return "❌ App '$packageName' nicht installiert."
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        ctx.startActivity(intent)
-        "✅ $packageName geöffnet."
-    } catch (e: Exception) { "❌ Fehler: ${e.message}" }
+    fun openApp(packageName: String): String {
+        return try {
+            val intent = ctx.packageManager.getLaunchIntentForPackage(packageName)
+                ?: return "❌ App '$packageName' nicht installiert."
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            ctx.startActivity(intent)
+            "✅ $packageName geöffnet."
+        } catch (e: Exception) { "❌ Fehler: ${e.message}" }
+    }
 
     fun shareText(text: String): String = try {
         ctx.startActivity(Intent.createChooser(
