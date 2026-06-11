@@ -11,7 +11,6 @@ import com.clawforge.app.core.AgentService
 import com.clawforge.app.core.Store
 import com.clawforge.app.ui.ClawForgeTheme
 import com.clawforge.app.ui.MainScreen
-import com.clawforge.app.ui.PermissionScreen
 import com.clawforge.app.ui.allRuntimePermissions
 
 class MainActivity : ComponentActivity() {
@@ -42,15 +41,15 @@ class MainActivity : ComponentActivity() {
         var permsDone by remember { mutableStateOf(prefs.getBoolean("perms_done", false)) }
 
         if (!permsDone) {
-            PermissionScreen(onRequest = { perms ->
+            LaunchedEffect(Unit) {
                 onPermResult = {
                     prefs.edit().putBoolean("perms_done", true).apply()
                     permsDone = true
                 }
-                permLauncher.launch(perms)
-            })
-        } else {
-            MainScreen()
+                permLauncher.launch(allRuntimePermissions())
+            }
         }
+
+        MainScreen()
     }
 }
