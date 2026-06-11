@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Drei Neon-Krallen -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M34,28 C29,44 29,60 36,78 L43,73 C37,58 37,44 41,30 Z" />
+    <path
+        android:fillColor="#B388FF"
+        android:pathData="M52,22 C47,42 47,64 54,86 L61,81 C55,62 55,42 59,24 Z" />
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M70,28 C65,44 65,60 72,78 L79,73 C73,58 73,44 77,30 Z" />
+</vector>
