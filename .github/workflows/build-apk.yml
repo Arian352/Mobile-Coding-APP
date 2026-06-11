@@ -1,0 +1,44 @@
+name: Build APK
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Java 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: "8.7"
+
+      - name: APK bauen
+        run: gradle assembleRelease
+
+      - name: APK als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClawForge-APK
+          path: app/build/outputs/apk/release/app-release.apk
+
+      - name: Release mit APK erstellen (nur main)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "ClawForge – neueste Version"
+          body: "Automatisch gebaute APK. Einfach herunterladen und installieren."
+          files: app/build/outputs/apk/release/app-release.apk
